@@ -1,72 +1,80 @@
 # Arr Stack
 
-> An opinionated Docker Compose stack for the Servarr ecosystem with a
-> focus on simplicity, consistency, and long-term maintainability.
+> An opinionated Docker Compose stack for deploying the Servarr ecosystem with a focus on simplicity, consistency, and long-term maintainability.
 
-A clean, production-ready Docker Compose configuration for deploying the
-Servarr ecosystem. While the stack has been designed and tested
-primarily on Docker running inside an **unprivileged Proxmox VE LXC**,
-it runs anywhere Docker Compose is supported, including standard Debian
-and Ubuntu hosts, virtual machines, and other Linux distributions.
+This repository provides a clean, production-ready Docker Compose configuration for deploying the Servarr ecosystem.
 
-------------------------------------------------------------------------
+Originally based on **arr-new** by Automation Avenue, this fork focuses on improving the overall architecture rather than expanding the number of services. The result is a compose file that is easier to understand, easier to maintain, and suitable for both new and experienced self-hosters.
 
-## Why this project?
+Although the stack has been developed and tested primarily on Docker running inside an **unprivileged Proxmox VE LXC**, it is not tied to Proxmox. The same compose file can be deployed on any Linux host capable of running Docker Compose, including Debian, Ubuntu, virtual machines, and bare-metal Docker installations.
 
-There are countless Arr Stack examples available online. Most work well,
-but many have gradually accumulated inconsistent bind mounts, duplicated
-configuration, and deployment-specific tweaks that make them harder to
-understand and maintain.
+---
+
+# Why this fork?
+
+There are many Arr Stack repositories available today. Most work well, but over time many have accumulated inconsistent storage layouts, duplicated configuration, deployment-specific modifications, or unnecessary complexity.
 
 This project takes a different approach.
 
-Instead of adding every possible service or feature, it focuses on
-providing a clean foundation built around modern Docker practices, a
-predictable storage layout, and sensible defaults. The goal is to make
-the stack easy to deploy, easy to understand, and easy to maintain over
-time.
+Rather than adding every available application or feature, it focuses on providing a clean foundation built around modern Docker practices, predictable storage layouts, and sensible defaults. The objective is to make the stack easy to deploy, easy to understand, and easy to customise without sacrificing flexibility.
 
-------------------------------------------------------------------------
+---
 
-## Design Principles
+# Design Principles
 
--   Keep the compose file easy to read.
--   Use one consistent `/data` mount across media applications.
--   Optimise for hardlinks and atomic moves.
--   Minimise duplicated configuration.
--   Stay close to upstream Servarr recommendations.
--   Remain suitable for both generic Docker hosts and Proxmox VE
-    deployments.
+This project follows a few simple principles.
 
-------------------------------------------------------------------------
+- Keep the compose file easy to understand.
+- Use a single, consistent `/data` mount across media applications.
+- Optimise for hardlinks and atomic moves.
+- Minimise duplicated configuration.
+- Stay close to upstream Servarr recommendations.
+- Support both generic Docker hosts and Proxmox VE deployments.
 
-## Included Applications
+---
 
--   Radarr
--   Sonarr
--   Lidarr
--   Bazarr
--   Prowlarr
--   qBittorrent
--   Jellyfin
--   FlareSolverr (optional)
+# Included Applications
 
-------------------------------------------------------------------------
+The stack currently includes:
 
-## Architecture
+- Radarr
+- Sonarr
+- Lidarr
+- Bazarr
+- Prowlarr
+- qBittorrent
+- Jellyfin
+- FlareSolverr *(optional)*
 
-``` text
-                  Docker Host
-      (Debian, Ubuntu, VM or Proxmox)
+Each application is configured using the same design philosophy, resulting in a consistent deployment that's easy to extend and maintain.
 
-                  Host Storage
+---
+
+# Architecture
+
+The compose file intentionally presents the same filesystem layout to every media application.
+
+```text
+                    Docker Host
+
+             (Any Linux distribution)
+
                        │
                        ▼
-                  /mnt/data1
+
+            Host Media Storage Location
+
+         Examples:
+         • /mnt/data1
+         • /srv/media
+         • /data
+
                        │
-                       ▼
-                Docker Bind Mount
-                    /data
+               Docker Bind Mount
+                       │
+
+              Host Path  ─────►  /data
+
                        │
         ┌──────────────┼──────────────┐
         ▼              ▼              ▼
@@ -80,15 +88,17 @@ time.
                     Jellyfin
 ```
 
-Every media application shares the same `/data` mount. Downloads and
-libraries therefore exist on the same filesystem, allowing hardlinks and
-atomic moves instead of slow file copies.
+Every media application shares the same `/data` mount.
 
-------------------------------------------------------------------------
+Because downloads and media libraries reside on the same filesystem, Servarr applications can create hardlinks and perform atomic moves instead of copying files. This reduces disk usage, speeds up imports, and follows the storage recommendations from the Servarr and TRaSH Guides communities.
 
-## Recommended Directory Layout
+---
 
-``` text
+# Filesystem Layout
+
+Inside the containers, every application expects the following directory structure.
+
+```text
 /data
 ├── media
 │   ├── movies
@@ -97,6 +107,7 @@ atomic moves instead of slow file copies.
 │   ├── anime
 │   ├── books
 │   └── audiobooks
+│
 └── torrents
     ├── movies
     ├── tv
@@ -107,255 +118,92 @@ atomic moves instead of slow file copies.
     └── incomplete
 ```
 
-Example Proxmox deployment:
+The compose file maps a directory from the Docker host into `/data` inside every container.
 
-``` text
+By default, the compose file uses:
+
+```yaml
+- /mnt/data1:/data
+```
+
+Update the **host path** to match your environment before starting the stack.
+
+Examples:
+
+```yaml
+# Proxmox VE LXC
+- /mnt/data1:/data
+
+# Debian / Ubuntu
+- /srv/media:/data
+
+# Generic Linux
+- /data:/data
+```
+
+Only the **host path** should be changed.
+
+The **container path (`/data`) should remain unchanged**, as every application in the stack expects to use this location.
+
+Example Proxmox VE deployment:
+
+```text
 Host
 └── /mnt/pve/media2/arrstack
         │
         ▼
-LXC
+Docker Host
 └── /mnt/data1
         │
         ▼
-Docker
+Containers
 └── /data
 ```
 
-On a standard Docker host, simply bind your preferred storage location
-directly to `/data`.
+---
 
-------------------------------------------------------------------------
+# Quick Start
 
-## Quick Start
+Clone the repository.
 
-Clone the repository:
-
-``` bash
+```bash
 git clone https://github.com/<your-username>/<repository>.git
 cd <repository>
 ```
 
-Review the volume paths in `docker-compose.yaml`, then start the stack:
+Before starting the stack, review the bind mounts in `docker-compose.yaml` and update the **host paths** to match your storage layout.
 
-``` bash
+Deploy the stack:
+
+```bash
 docker compose up -d
 ```
 
 Verify the deployment:
 
-``` bash
+```bash
 docker compose ps
 ```
 
-------------------------------------------------------------------------
+---
 
-## Initial Configuration
+# Next Steps
 
-Once the containers are running, a small amount of configuration is required before the applications can work together correctly.
+Your Arr Stack is now deployed.
 
-The most important concept is that **every application must reference the same `/data` mount**. This ensures downloads and media libraries remain on the same filesystem, allowing Servarr applications to use hardlinks and atomic moves instead of copying files.
+Continue with the guide below to complete the initial setup and connect all services together.
 
-### Configure qBittorrent
+- 📖 **[Initial Configuration](docs/INITIAL_CONFIGURATION.md)**
 
-Log in to the qBittorrent Web UI.
+Additional guides will be added as the project evolves.
 
-If this is your first time starting the container, retrieve the temporary administrator password from the container logs:
+---
 
-```bash
-docker logs qbittorrent
-```
+# Credits
 
-Once logged in:
+This project is based on the excellent **arr-new** repository by Automation Avenue.
 
-1. Navigate to **Tools → Options → Downloads**.
-2. Set the **Default Save Path** to:
-
-```text
-/data/torrents
-```
-
-3. Under **Torrent Management**, configure the following options:
-
-- Default Torrent Management Mode: **Automatic**
-- When Torrent Category Changed: **Relocate Torrent**
-- When Default Save Path Changed: **Switch affected torrents to Manual Mode**
-- When Category Save Path Changed: **Switch affected torrents to Manual Mode**
-
-4. Enable:
-
-- Use Subcategories
-- Use Category Paths in Manual Mode
-
-Save the configuration before continuing.
-
-### Create Categories
-
-Next, create the download categories that will be used by the Arr applications.
-
-Navigate to **Categories**, then create the following:
-
-| Category | Save Path |
-| -------- | --------- |
-| movies | movies |
-| tv | tv |
-| music | music |
-| anime | anime |
-| books | books |
-
-Because the default save path is already `/data/torrents`, each category will automatically resolve to:
-
-```text
-/data/torrents/movies
-/data/torrents/tv
-/data/torrents/music
-/data/torrents/anime
-/data/torrents/books
-```
-
-### Configure Radarr
-
-Open **Settings → Media Management**.
-
-Set the root folder to:
-
-```text
-/data/media/movies
-```
-
-Enable **Use Hardlinks instead of Copy**.
-
-Next, navigate to **Settings → Download Clients** and add qBittorrent using:
-
-- Host: `qbittorrent`
-- Port: `8080`
-- Category: `movies`
-
-The category **must** match the category created earlier in qBittorrent.
-
-### Configure Sonarr
-
-Open **Settings → Media Management**.
-
-Set the root folder to:
-
-```text
-/data/media/tv
-```
-
-Enable **Use Hardlinks instead of Copy**.
-
-Add qBittorrent as the download client using:
-
-- Host: `qbittorrent`
-- Port: `8080`
-- Category: `tv`
-
-### Configure Lidarr
-
-Open **Settings → Media Management**.
-
-Set the root folder to:
-
-```text
-/data/media/music
-```
-
-Add qBittorrent as the download client using:
-
-- Host: `qbittorrent`
-- Port: `8080`
-- Category: `music`
-
-### Configure Prowlarr
-
-Prowlarr acts as the central indexer manager for the stack.
-
-First, add qBittorrent under **Settings → Download Clients**.
-
-Then connect Radarr, Sonarr, and Lidarr under **Settings → Apps** using each application's API key.
-
-Use the following internal container addresses:
-
-```text
-Prowlarr:   http://prowlarr:9696
-
-Radarr:     http://radarr:7878
-Sonarr:     http://sonarr:8989
-Lidarr:     http://lidarr:8686
-```
-
-Because every service shares the same Docker network, the container name is used instead of an IP address.
-
-### Configure Jellyfin
-
-During the initial setup wizard, create your administrator account.
-
-When adding media libraries, use the following paths:
-
-Movies
-
-```text
-/data/media/movies
-```
-
-TV Shows
-
-```text
-/data/media/tv
-```
-
-Music
-
-```text
-/data/media/music
-```
-
-Additional libraries can be added following the same directory structure.
-
-### Why this layout?
-
-The stack intentionally uses a single shared `/data` mount.
-
-```text
-/data
-├── media
-└── torrents
-```
-
-Downloads are initially saved into `/data/torrents`.
-
-Once imported, the Arr applications create hardlinks into `/data/media` instead of copying the files.
-
-This results in:
-
-- Instant imports (atomic moves)
-- No duplicate disk usage
-- Faster library updates
-- A consistent directory structure across every application
-------------------------------------------------------------------------
-
-## Screenshots
-
-*Coming soon.*
-
--   Docker Compose
--   qBittorrent
--   Radarr
--   Sonarr
--   Jellyfin
-
-------------------------------------------------------------------------
-
-## Credits
-
-This project is based on the excellent **arr-new** repository by
-Automation Avenue.
-
-Rather than replacing the original project, this repository builds upon
-it with a simplified architecture, cleaner Docker Compose configuration,
-and improvements aimed at long-term homelab deployments, especially
-those running on Proxmox VE.
+Rather than replacing the original project, this repository builds upon it with a cleaner Docker Compose configuration, improved storage layout, and an architecture focused on long-term maintainability and Docker best practices.
 
 Original project:
 
