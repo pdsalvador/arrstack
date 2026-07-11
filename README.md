@@ -191,12 +191,23 @@ docker compose ps
 
 Your Arr Stack is now deployed.
 
-Continue with the guide below to complete the initial setup and connect all services together.
+Continue with the following guides to complete the setup and learn how the stack works.
 
-- 📖 **[Initial Configuration](docs/INITIAL_CONFIGURATION.md)**
+### Recommended
 
-Additional guides will be added as the project evolves.
+- 📖 **[Initial Configuration](docs/INITIAL_CONFIGURATION.md)**  
+  Configure qBittorrent, Prowlarr, the Arr applications, and Jellyfin after deployment.
 
+- 📖 **[Architecture](docs/ARCHITECTURE.md)**  
+  Understand the design decisions, storage layout, Docker networking, and how the applications work together.
+
+- 📖 **[Media Workflow](docs/MEDIA_WORKFLOW.md)**  
+  Follow a complete media request from search to playback and learn how each application contributes to the process.
+
+### Proxmox VE
+
+- 📖 **[Proxmox LXC UID/GID Mapping](docs/PROXMOX_LXC_UID_GID_MAPPING.md)**  
+  Understand UID/GID translation in unprivileged LXC containers and resolve common permission issues.
 ---
 
 # Credits
@@ -208,3 +219,5 @@ Rather than replacing the original project, this repository builds upon it with 
 Original project:
 
 https://github.com/automation-avenue/arr-new
+
+Special thanks to the Servarr, TRaSH Guides, Jellyfin, Docker, and Proxmox VE communities for their documentation, recommendations, and continued development of the projects that make this stack possible.
